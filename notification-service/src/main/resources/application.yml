@@ -1,0 +1,54 @@
+server:
+  port: 8001
+  servlet:
+    context-path: /notification
+
+spring:
+  application:
+    name:
+      notification-service
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: devtest.191203@gmail.com
+    password: zowa byzh ngdd uznq
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  datasource:
+    url: ${DBMS_CONNECTION:jdbc:postgresql://localhost:5432/02-notification-service-tingboxvn}
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  kafka:
+    bootstrap-servers: localhost:9094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+app:
+  CHARACTERS: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    enabled: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-second: 10
+    lease-expiration-duration-in-seconds: 30

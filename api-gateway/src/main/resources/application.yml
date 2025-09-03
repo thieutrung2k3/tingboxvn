@@ -1,0 +1,70 @@
+# @format
+
+# API Gateway application.yml
+server:
+  port: 2109
+
+app:
+  api-prefix: /api/v1
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=${app.api-prefix}/auth/**
+          filters:
+            - RewritePath=${app.api-prefix}/(?<path>.*), /$\{path}
+            - name: AuthenticationFilter
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=${app.api-prefix}/notification/**
+          filters:
+            - RewritePath=${app.api-prefix}/(?<path>.*), /$\{path}
+            - name: AuthenticationFilter
+        - id: passenger-service
+          uri: lb://passenger-service
+          predicates:
+            - Path=${app.api-prefix}/passenger/**
+          filters:
+            - RewritePath=${app.api-prefix}/(?<path>.*), /$\{path}
+            - name: AuthenticationFilter
+      default-filters:
+        - name: Retry
+          args:
+            retries: 3
+            methods: GET,POST,PUT,DELETE
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 10
+            redis-rate-limiter.burstCapacity: 20
+            redis-rate-limiter.requestedTokens: 1
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+    org.springframework.web.cors: DEBUG
+    com.kir.apigateway: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
