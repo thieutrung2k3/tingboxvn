@@ -47,6 +47,12 @@ spring:
         min-idle: 0
     timeout: 2000ms
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
 cache:
   redis:
     ttl: 1800 # 30 minutes

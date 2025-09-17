@@ -2,7 +2,7 @@
 
 # API Gateway application.yml
 server:
-  port: 2109
+  port: 8888
 
 app:
   api-prefix: /api/v1
@@ -35,6 +35,13 @@ spring:
           uri: lb://passenger-service
           predicates:
             - Path=${app.api-prefix}/passenger/**
+          filters:
+            - RewritePath=${app.api-prefix}/(?<path>.*), /$\{path}
+            - name: AuthenticationFilter
+        - id: search-service
+          uri: lb://search-service
+          predicates:
+            - Path=${app.api-prefix}/search/**
           filters:
             - RewritePath=${app.api-prefix}/(?<path>.*), /$\{path}
             - name: AuthenticationFilter

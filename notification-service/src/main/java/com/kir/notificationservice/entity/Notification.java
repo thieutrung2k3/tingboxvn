@@ -29,7 +29,7 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     private NotificationType notificationType;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = true, columnDefinition = "TEXT")
     private String message;
 
     @Column(nullable = false, length = 50)
@@ -49,13 +49,4 @@ public class Notification {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "notification", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Recipient> recipients;
-
-    @OneToMany(mappedBy = "notification", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<NotificationSchedule> schedules;
-
-    @OneToMany(mappedBy = "notification", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<NotificationLog> logs;
 }

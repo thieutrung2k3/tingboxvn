@@ -18,5 +18,13 @@ public final class CacheConstant {
         public static String rolePermissionsKey(Long roleId) {
             return ROLE_PERMISSIONS + ":" + roleId;
         }
+
+        public static String otpKey(String obj){
+            return CachePrefix.Otp + obj;
+        }
+    }
+
+    public static final class CachePrefix {
+        public static final String Otp = "otp:";
     }
 }

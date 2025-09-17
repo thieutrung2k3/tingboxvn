@@ -1,4 +1,4 @@
-package com.kir.notificationservice.util;
+package com.kir.commonservice.util;
 
 import java.security.SecureRandom;
 

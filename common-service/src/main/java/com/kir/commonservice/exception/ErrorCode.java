@@ -36,6 +36,8 @@ public enum ErrorCode {
     CAN_NOT_CREATE_EMAIL_TEMPLATE(2005, "Có lỗi xảy ra khi tạo email template", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_NULL(2006, "Email không được bỏ trống.", HttpStatus.BAD_REQUEST),
     OTP_CODE_INVALID(2007, "Mã OTP không hợp lệ.", HttpStatus.BAD_REQUEST),
+    EMAIL_TEMPLATE_NULL(2008, "Email template rỗng.", HttpStatus.BAD_REQUEST),
+    EMAIL_SEND_FAILED(2009, "Gửi email thất bại.", HttpStatus.BAD_REQUEST),
     /**
      * 3. Search
      */

@@ -10,8 +10,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: devtest.191203@gmail.com
-    password: zowa byzh ngdd uznq
+    username: tingboxvn.test@gmail.com
+    password: omxl oqpa coms ebbh
     properties:
       mail:
         smtp:
@@ -24,13 +24,18 @@ spring:
     password: postgres
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true
   kafka:
     bootstrap-servers: localhost:9094
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 app:
   CHARACTERS: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"

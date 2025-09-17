@@ -6,37 +6,26 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
-@Entity
+@Entity(name = "notification_configs")
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Table(name = "email_templates")
-public class EmailTemplate {
+public class NotificationConfig {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "template_code", unique = true, nullable = false, length = 50)
-    private String templateCode;
+    @Column(name = "config_key", unique = true)
+    private String configKey;
 
-    @Column(name = "template_name", nullable = false)
-    private String templateName;
+    @Column(name = "config_value")
+    private String configValue;
 
-    @Column(nullable = false)
-    private String subject;
-
-    @Column(name = "template_path", nullable = false)
-    private String templatePath;
-
-    @Column(name = "variables")
-    private List<String> variables;
-
-    @Column(name = "is_active")
-    private Boolean isActive = true;
+    @Column(name = "description")
+    private String description;
 
     @Column(name = "is_delete")
     private Boolean isDelete = false;

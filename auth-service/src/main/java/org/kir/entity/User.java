@@ -2,13 +2,27 @@ package org.kir.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.hibernate.proxy.HibernateProxy;
+import org.kir.dto.response.UserResponse;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.Set;
 
+
+@SqlResultSetMapping(
+        name = "UserResponseMapping",
+        classes = @ConstructorResult(
+                targetClass = UserResponse.class,
+                columns = {
+                        @ColumnResult(name = "email", type = String.class),
+                        @ColumnResult(name = "first_name", type = String.class),
+                        @ColumnResult(name = "last_name", type = String.class),
+                        @ColumnResult(name = "is_active", type = Boolean.class),
+                        @ColumnResult(name = "is_delete", type = Boolean.class),
+                        @ColumnResult(name = "created_at", type = LocalDateTime.class),
+                        @ColumnResult(name = "updated_at", type = LocalDateTime.class)
+                }
+        )
+)
 @Entity
 @Getter
 @Setter

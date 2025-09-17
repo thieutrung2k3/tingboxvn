@@ -73,7 +73,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                         log.info(authResponse.toString());
                         if (authResponse.isValidate()) {
                             log.info("Token validation successful for URI: {}", uri);
-                            return chain.filter(exchange);
+                            ServerHttpRequest mutatedRequest = exchange.getRequest()
+                                    .mutate()
+                                    .header("X-User-Email", authResponse.getEmail())
+                                    .build();
+                            return chain.filter(exchange.mutate().request(mutatedRequest).build());
                         } else {
                             log.warn("Token validation failed for URI: {}", uri);
                             return onError(exchange, ErrorCode.GATEWAY_UNAUTHENTICATED);

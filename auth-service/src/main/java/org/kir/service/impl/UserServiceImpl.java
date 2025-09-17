@@ -1,8 +1,15 @@
 package org.kir.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kir.commonservice.cache.QueueMessage;
+import com.kir.commonservice.constant.CacheConstant;
+import com.kir.commonservice.constant.QueueConstant;
 import com.kir.commonservice.dto.ApiResponse;
+import com.kir.commonservice.dto.request.CustomerInfo;
+import com.kir.commonservice.dto.request.OtpRequest;
 import com.kir.commonservice.exception.AppException;
 import com.kir.commonservice.exception.ErrorCode;
+import com.kir.commonservice.util.OtpUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -22,16 +29,26 @@ import org.kir.repository.UserRepository;
 import org.kir.repository.RolePermissionRepository;
 import org.kir.repository.RoleRepository;
 import org.kir.repository.httpClient.PassengerClient;
+import org.kir.service.AuthService;
 import org.kir.service.UserService;
+import org.kir.service.producer.UserProducer;
+import org.kir.util.AuthUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +57,9 @@ public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
     private final RolePermissionRepository rolePermissionRepository;
     private final PassengerClient passengerClient;
+    private final UserProducer userProducer;
+    private final ObjectMapper objectMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Value("${app.CHARACTERS}")
     @NonFinal
@@ -49,6 +69,16 @@ public class UserServiceImpl implements UserService {
     RoleRepository roleRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
+
+    @Override
+    public UserResponse getUserInfo() {
+        String email = AuthUtil.getEmailFromToken();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        validateUser(user, false);
+
+        return userMapper.toUserResponse(user);
+    }
 
     /**
      * Register account
@@ -63,7 +93,7 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
         User user = userMapper.toUser(request);
-//        user.setIsActive(false);
+        user.setIsActive(false);
 
         //Set role
         Role role = roleRepository.findByName(RoleConst.USER_ROLE)
@@ -73,8 +103,6 @@ public class UserServiceImpl implements UserService {
                 .user(user)
                 .build();
         user.setUserRoles(Set.of(userRole));
-
-        //Set password
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
         //Save to db
@@ -92,11 +120,31 @@ public class UserServiceImpl implements UserService {
             ApiResponse<PassengerResponse> passengerResponse = passengerClient.createPassenger(passengerCreationRequest);
 
             if (!passengerResponse.isSuccess()) {
-                log.info(passengerResponse.getData().toString());
+                throw new AppException(ErrorCode.REGISTRATION_FAILED);
             }
-        } catch (AppException e) {
+            CustomerInfo customerInfo = CustomerInfo.builder()
+                    .setCustomerId(user.getId())
+                    .setCustomerName(user.getFirstName() + " " + user.getLastName())
+                    .setPhoneNumber(request.getPhoneNumber())
+                    .build();
+            OtpRequest otpRequest = OtpRequest.builder()
+                    .setOtp(OtpUtil.generateOtp())
+                    .setEmail(user.getEmail())
+                    .setCustomerInfo(customerInfo)
+                    .build();
+            redisTemplate.opsForValue()
+                    .set(CacheConstant.CacheKeys.otpKey(user.getEmail()), otpRequest.getOtp(), 5L, TimeUnit.MINUTES);
+            String message = objectMapper.writeValueAsString(otpRequest);
+
+            QueueMessage<OtpRequest> queueMessage = QueueMessage.<OtpRequest>builder()
+                    .type(QueueConstant.Type.OTP)
+                    .payload(otpRequest)
+                    .build();
+            userProducer.sendToNotificationQueue(queueMessage);
+        } catch (Exception e) {
             throw new AppException(ErrorCode.REGISTRATION_FAILED);
         }
+
         return userMapper.toUserResponse(user);
     }
 
@@ -116,24 +164,22 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public UserResponse validateUser(ValidateEmailRequest request) {
-//        User user = accountRepository.findByEmail(request.getEmail())
-//                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
-//
-//        if(user.getIsActive()){
-//            throw new AppException(ErrorCode.ACCOUNT_ACTIVATED);
-//        }
-//        //log.info("validating");
-//        boolean validatedOtp =  notificationClient.validateOtp(request);
-//
-//        if(!validatedOtp){
-//            throw new AppException(ErrorCode.OTP_INVALID);
-//        }
-//
-//        user.setActive(true);
-//        accountRepository.save(user);
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-//        return accountMapper.toAccountResponse(user);
-        return null;
+        validateUser(user, true);
+
+         String otp = Objects.requireNonNull(redisTemplate.opsForValue().get(request.getEmail())).toString();
+
+        if(!otp.equals(request.getOtp())){
+            throw new AppException(ErrorCode.OTP_CODE_INVALID);
+        }
+
+        redisTemplate.delete(request.getEmail());
+        user.setIsActive(true);
+        userRepository.save(user);
+
+        return userMapper.toUserResponse(user);
     }
 
     @Override
@@ -146,5 +192,26 @@ public class UserServiceImpl implements UserService {
             username.append(characters.charAt(index));
         }
         return username.toString();
+    }
+
+    public void validateUser(User user, boolean isActive) {
+        if(user == null){
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+        if(user.getIsDelete()){
+            throw new AppException(ErrorCode.USER_DELETED);
+        }
+        if(isActive && user.getIsActive()){
+            throw new AppException(ErrorCode.USER_ACTIVATED);
+        }
+        if(!isActive && !user.getIsActive()){
+            throw new AppException(ErrorCode.USER_NOT_ACTIVATED);
+        }
+    }
+
+    @Override
+    public List<UserResponse> getUsersWithPaging(Pageable pageable, String keyword, LocalDateTime from, LocalDateTime to) {
+        Page<UserResponse> userResponses = userRepository.getUsersWithPaging(pageable, keyword, from, to);
+        return userResponses.getContent();
     }
 }

@@ -21,9 +21,8 @@ public class NotificationSchedule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "notification_id", nullable = false)
-    private Notification notification;
+    @Column(name = "notification_id", nullable = false)
+    private Long notificationId;
 
     @Column(name = "scheduled_time", nullable = false)
     private LocalDateTime scheduledTime;

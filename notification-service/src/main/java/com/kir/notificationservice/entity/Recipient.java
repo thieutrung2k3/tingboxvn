@@ -26,6 +26,9 @@ public class Recipient {
     @Enumerated(EnumType.STRING)
     private RecipientStatus status;
 
+    @Column(name = "notification_id", nullable = false)
+    private Long notificationId;
+
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
 

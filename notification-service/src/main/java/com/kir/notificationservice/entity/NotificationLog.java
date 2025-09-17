@@ -1,6 +1,5 @@
 package com.kir.notificationservice.entity;
 
-import com.kir.notificationservice.constant.LogAction;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -17,23 +16,20 @@ public class NotificationLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "notification_id")
-    private Notification notification;
+    @Column(name = "notification_id", nullable = false)
+    private Long notificationId;
 
     @Column(name = "customer_id", nullable = false)
     private Long customerId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "template_id")
-    private EmailTemplate template;
+    @Column(name = "email_template_code", nullable = false)
+    private String emailTemplateCode;
 
-    @Column(nullable = false, length = 50)
-    @Enumerated(EnumType.STRING)
-    private LogAction action;
+    @Column(nullable = false)
+    private String status;
 
-    @Column(columnDefinition = "jsonb")
-    private String details;
+    @Column(name = "detail")
+    private String detail;
 
     @Column(name = "ip_address")
     private String ipAddress;
