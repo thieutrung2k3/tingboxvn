@@ -24,9 +24,8 @@ public class Trip {
     @Column(name = "trip_reference_id", unique = true, nullable = false)
     private String tripReferenceId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "provider_id", referencedColumnName = "id")
-    private Provider provider;
+    @Column(name = "provider_id", nullable = false)
+    private String providerId;
 
     @Column(name = "origin_code", nullable = false)
     private String originCode;
@@ -44,13 +43,13 @@ public class Trip {
     private String vehicleInfo;
 
     @Column(name = "trip_type", nullable = false)
-    private AppConstants.TripType tripType;
+    private String tripType;
 
     @Column(name = "base_price", nullable = false)
     private BigDecimal basePrice;
 
     @Column(name = "status", nullable = false)
-    private AppConstants.TripStatus status;
+    private String status;
 
     @CreationTimestamp
     @Column(name = "created_at")

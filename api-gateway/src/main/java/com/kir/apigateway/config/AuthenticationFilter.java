@@ -55,7 +55,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             log.info("Processing request for URI: {}", uri);
 
             // Skip authentication for public endpoints
-            if (PUBLIC_ENDPOINTS.stream().anyMatch(ep -> ep.equals(uri))) {
+            if (PUBLIC_ENDPOINTS.stream().anyMatch(ep -> ep.equals(uri)) || uri.contains("/public/")) {
                 log.info("Skipping authentication for public endpoint: {}", uri);
                 return chain.filter(exchange);
             }

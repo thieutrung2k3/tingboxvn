@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác thực OTP - TingBox VN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .message {
+            font-size: 16px;
+            margin-bottom: 30px;
+            color: #555;
+            line-height: 1.8;
+        }
+        
+        .otp-container {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 30px 0;
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+        }
+        
+        .otp-label {
+            color: white;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .otp-code {
+            font-size: 36px;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .expiry-notice {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        
+        .expiry-notice .icon {
+            color: #f39c12;
+            font-size: 20px;
+            margin-right: 8px;
+        }
+        
+        .expiry-notice .text {
+            color: #856404;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .security-tips {
+            background-color: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .security-tips h3 {
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .security-tips ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .security-tips li {
+            color: #34495e;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+            font-size: 14px;
+        }
+        
+        .security-tips li:before {
+            content: "✓";
+            color: #27ae60;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        .footer {
+            background-color: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .footer .company-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .footer .contact-info {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+        
+        .footer .disclaimer {
+            font-size: 12px;
+            opacity: 0.6;
+            line-height: 1.5;
+        }
+        
+        .social-links {
+            margin: 20px 0 10px 0;
+        }
+        
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            opacity: 1;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header, .content, .footer {
+                padding: 20px;
+            }
+            
+            .otp-code {
+                font-size: 28px;
+                letter-spacing: 4px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔐 Xác Thực Tài Khoản</h1>
+            <p>TingBox VN - Hệ thống đặt vé trực tuyến</p>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <div class="greeting">
+                Xin chào <strong>{receiver_name}</strong>,
+            </div>
+            
+            <div class="message">
+                Chúng tôi đã nhận được yêu cầu xác thực tài khoản của bạn. Để hoàn tất quá trình này, 
+                vui lòng sử dụng mã OTP bên dưới:
+            </div>
+            
+            <!-- OTP Container -->
+            <div class="otp-container">
+                <div class="otp-label">Mã xác thực của bạn</div>
+                <div class="otp-code">{otp_code}</div>
+            </div>
+            
+            <!-- Expiry Notice -->
+            <div class="expiry-notice">
+                <span class="icon">⏰</span>
+                <span class="text">Mã OTP này sẽ hết hạn sau <strong>5 phút</strong></span>
+            </div>
+            
+            <!-- Security Tips -->
+            <div class="security-tips">
+                <h3>🛡️ Lưu ý bảo mật:</h3>
+                <ul>
+                    <li>Không chia sẻ mã OTP này với bất kỳ ai</li>
+                    <li>TingBox VN không bao giờ yêu cầu mã OTP qua điện thoại</li>
+                    <li>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email</li>
+                    <li>Liên hệ ngay với chúng tôi nếu có hoạt động đáng ngờ</li>
+                </ul>
+            </div>
+            
+            <div class="message">
+                Nếu bạn gặp bất kỳ vấn đề nào, đừng ngần ngại liên hệ với đội ngũ hỗ trợ của chúng tôi.
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="company-name">TingBox VN</div>
+            <div class="contact-info">
+                📧 support@tingboxvn.com | 📞 1900-xxxx<br>
+                🏢 Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM
+            </div>
+            
+            <div class="social-links">
+                <a href="#" title="Facebook">📘</a>
+                <a href="#" title="Instagram">📷</a>
+                <a href="#" title="Twitter">🐦</a>
+                <a href="#" title="LinkedIn">💼</a>
+            </div>
+            
+            <div class="disclaimer">
+                Email này được gửi tự động từ hệ thống TingBox VN. Vui lòng không trả lời email này.<br>
+                © 2025 TingBox VN. Tất cả quyền được bảo lưu.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
