@@ -37,4 +37,7 @@ public class Provider {
 
     @Column(name = "currency")
     private String currency; //Đơn vị tiền tệ
+
+    @Column(name = "image_url")
+    private String imageUrl;
 }

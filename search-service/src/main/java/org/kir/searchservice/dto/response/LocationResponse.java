@@ -4,14 +4,16 @@ import jakarta.persistence.Column;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @Builder
 public class LocationResponse {
     private Long id;
 
-    private String iata;
-
-    private String icao;
+    @Builder.Default
+    private List<String> iata = new ArrayList<>();
 
     private String name;
 

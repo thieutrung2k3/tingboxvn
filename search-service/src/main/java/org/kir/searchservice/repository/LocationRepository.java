@@ -7,11 +7,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface LocationRepository extends JpaRepository<Location, Long> {
 
     @Query(value = "SELECT * FROM locations l WHERE l.location LIKE %:location%",
             countQuery = "SELECT count(*) FROM locations l WHERE l.location LIKE %:location%",
             nativeQuery = true)
     Page<Location> findByLocationKey(@Param("location") String location, Pageable pageable);
+
+    @Query("SELECT l FROM Location l WHERE l.iata IN :famousCities")
+    List<Location> findFamousCity(List<String> famousCities);
 
 }

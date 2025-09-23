@@ -1,53 +1,28 @@
-package com.kir.notificationservice.service.consumer;
+package com.kir.notificationservice.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kir.commonservice.cache.QueueMessage;
-import com.kir.commonservice.config.RabbitMQConfig;
-import com.kir.commonservice.constant.QueueConstant;
-import com.kir.commonservice.dto.request.OtpRequest;
-import com.kir.commonservice.dto.request.EmailRequest;
+import com.kir.commonservice.dto.ApiResponse;
 import com.kir.commonservice.dto.request.TicketEmailRequest;
-import com.kir.notificationservice.service.OtpNotificationService;
+import com.kir.notificationservice.service.impl.EmailSenderServiceImpl;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
-@Service
+@RestController
 @RequiredArgsConstructor
-public class NotificationConsumer {
+@RequestMapping("/email")
+public class TicketEmailController {
 
-    private final ObjectMapper objectMapper;
-    private final OtpNotificationService otpNotificationService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private final com.kir.notificationservice.service.EmailSenderService emailSenderService;
 
-    @RabbitListener(queues = RabbitMQConfig.QUEUE)
-    public void consumeMessage(String rawMessage) {
-        try {
-            QueueMessage<?> queueMessage = objectMapper.readValue(rawMessage, new TypeReference<QueueMessage<?>>() {
-            });
-            switch (queueMessage.getType()) {
-                case QueueConstant.Type.OTP -> {
-                    OtpRequest otpRequest = objectMapper.convertValue(queueMessage.getPayload(), OtpRequest.class);
-                    otpNotificationService.sendEmailOtp(otpRequest);
-                    log.info("[NOTIFICATION_CONSUMER]: Send email OTP successfully.");
-                }
-                case QueueConstant.Type.TICKET_EMAIL -> {
-                    TicketEmailRequest emailRequest = objectMapper.convertValue(queueMessage.getPayload(), TicketEmailRequest.class);
-                    String html = buildTicketHtml(emailRequest);
-                    String subject = "Your e-ticket - " + emailRequest.getOrderCode();
-                    emailSenderService.send(emailRequest.getTo(), subject, html);
-                    log.info("[NOTIFICATION_CONSUMER]: Send ticket email successfully.");
-                }
-                default -> {
-                    log.warn("[NOTIFICATION_CONSUMER]: Unknown message type: {}", queueMessage.getType());
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    @PostMapping("/ticket")
+    public ApiResponse<String> sendTicketEmail(@RequestBody TicketEmailRequest req) {
+        String html = buildTicketHtml(req);
+        String subject = "Your e-ticket - " + req.getOrderCode();
+        emailSenderService.send(req.getTo(), subject, html);
+        return ApiResponse.data("SENT");
     }
 
     private String buildTicketHtml(TicketEmailRequest req) {
@@ -86,3 +61,5 @@ public class NotificationConsumer {
         }
     }
 }
+
+

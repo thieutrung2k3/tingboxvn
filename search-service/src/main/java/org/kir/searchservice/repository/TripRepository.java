@@ -8,30 +8,28 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface TripRepository extends JpaRepository<Trip, Long> {
-    @Query(value = """
-            SELECT *
-            FROM trips t
-            WHERE t.departure_time = COALESCE(CAST(:departureTime AS timestamp), t.departure_time)
-              AND t.origin_code = COALESCE(:originCode, t.origin_code)
-              AND t.destination_code = COALESCE(:destinationCode, t.destination_code)
-              AND t.provider_id = COALESCE(:providerId, t.provider_id)
-            """,
-            countQuery = """
-                    SELECT count(*)
-                    FROM trips t
-                    WHERE t.departure_time = COALESCE(CAST(:departureTime AS timestamp), t.departure_time)
-                      AND t.origin_code = COALESCE(:originCode, t.origin_code)
-                      AND t.destination_code = COALESCE(:destinationCode, t.destination_code)
-                      AND t.provider_id = COALESCE(:providerId, t.provider_id)
-                    """,
-            nativeQuery = true)
-    Page<Trip> searchWithPageable(@Param("departureTime") LocalDateTime departureTime,
-                                  @Param("originCode") String originCode,
-                                  @Param("destinationCode") String destinationCode,
-                                  @Param("providerId") Long providerId,
-                                  Pageable pageable);
-
+  @Query(value = """
+      SELECT *
+      FROM trips t
+      WHERE t.departure_time = COALESCE(CAST(:departureTime AS timestamp), t.departure_time)
+        AND (:originCodes IS NULL OR t.origin_code IN (:originCodes))
+        AND (:destinationCodes IS NULL OR t.destination_code IN (:destinationCodes))
+        AND t.provider_id = COALESCE(:providerId, t.provider_id)
+      """, countQuery = """
+      SELECT count(*)
+      FROM trips t
+      WHERE t.departure_time = COALESCE(CAST(:departureTime AS timestamp), t.departure_time)
+        AND (:originCodes IS NULL OR t.origin_code IN (:originCodes))
+        AND (:destinationCodes IS NULL OR t.destination_code IN (:destinationCodes))
+        AND t.provider_id = COALESCE(:providerId, t.provider_id)
+      """, nativeQuery = true)
+  Page<Trip> searchWithPageable(@Param("departureTime") LocalDateTime departureTime,
+      @Param("originCodes") List<String> originCodes,
+      @Param("destinationCodes") List<String> destinationCodes,
+      @Param("providerId") Long providerId,
+      Pageable pageable);
 
 }

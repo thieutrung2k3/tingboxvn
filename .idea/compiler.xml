@@ -10,6 +10,7 @@
         <module name="auth-service" />
         <module name="common-service" />
         <module name="search-service" />
+        <module name="booking-service" />
         <module name="api-gateway" />
         <module name="passenger-service" />
         <module name="eureka-server" />
@@ -21,6 +22,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
       <module name="auth-service" options="-parameters" />
+      <module name="booking-service" options="-parameters" />
       <module name="common-service" options="" />
       <module name="eureka-server" options="-parameters" />
       <module name="notification-service" options="" />

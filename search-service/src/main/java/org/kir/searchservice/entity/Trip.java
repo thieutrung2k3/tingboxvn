@@ -25,7 +25,7 @@ public class Trip {
     private String tripReferenceId;
 
     @Column(name = "provider_id", nullable = false)
-    private String providerId;
+    private Long providerId;
 
     @Column(name = "origin_code", nullable = false)
     private String originCode;
