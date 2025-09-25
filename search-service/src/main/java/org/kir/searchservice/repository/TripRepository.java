@@ -14,22 +14,24 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
   @Query(value = """
       SELECT *
       FROM trips t
-      WHERE t.departure_time = COALESCE(CAST(:departureTime AS timestamp), t.departure_time)
-        AND (:originCodes IS NULL OR t.origin_code IN (:originCodes))
-        AND (:destinationCodes IS NULL OR t.destination_code IN (:destinationCodes))
-        AND t.provider_id = COALESCE(:providerId, t.provider_id)
+      WHERE t.departure_time >= COALESCE(:startTime, t.departure_time)
+        AND t.departure_time < COALESCE(:endTime, t.departure_time)
+        AND ( :applyOrigin = false OR t.origin_code IN (:originCodes) )
+        AND ( :applyDestination = false OR t.destination_code IN (:destinationCodes) )
       """, countQuery = """
       SELECT count(*)
       FROM trips t
-      WHERE t.departure_time = COALESCE(CAST(:departureTime AS timestamp), t.departure_time)
-        AND (:originCodes IS NULL OR t.origin_code IN (:originCodes))
-        AND (:destinationCodes IS NULL OR t.destination_code IN (:destinationCodes))
-        AND t.provider_id = COALESCE(:providerId, t.provider_id)
+      WHERE t.departure_time >= COALESCE(:startTime, t.departure_time)
+        AND t.departure_time < COALESCE(:endTime, t.departure_time)
+        AND ( :applyOrigin = false OR t.origin_code IN (:originCodes) )
+        AND ( :applyDestination = false OR t.destination_code IN (:destinationCodes) )
       """, nativeQuery = true)
-  Page<Trip> searchWithPageable(@Param("departureTime") LocalDateTime departureTime,
+  Page<Trip> searchWithPageable(@Param("startTime") LocalDateTime startTime,
+      @Param("endTime") LocalDateTime endTime,
+      @Param("applyOrigin") boolean applyOrigin,
       @Param("originCodes") List<String> originCodes,
+      @Param("applyDestination") boolean applyDestination,
       @Param("destinationCodes") List<String> destinationCodes,
-      @Param("providerId") Long providerId,
       Pageable pageable);
 
 }

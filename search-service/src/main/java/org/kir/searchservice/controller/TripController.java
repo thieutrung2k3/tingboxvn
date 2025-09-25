@@ -23,10 +23,11 @@ public class TripController {
 
     @GetMapping("/public/search")
     public ApiResponse<List<TripResponse>> search(Pageable pageable,
-            @RequestParam(value = "departureTime", required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS") LocalDateTime departureTime,
+            @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
             @RequestParam(value = "originCodes", required = false) List<String> originCodes,
             @RequestParam(value = "destinationCodes", required = false) List<String> destinationCodes,
             @RequestParam(value = "providerId", required = false) Long providerId) {
-        return ApiResponse.data(tripService.search(pageable, departureTime, originCodes, destinationCodes, providerId));
+        return ApiResponse.data(tripService.search(pageable, from, to, originCodes, destinationCodes, providerId));
     }
 }

@@ -8,6 +8,8 @@ import com.kir.passengerservice.repository.PassengerRepository;
 import com.kir.passengerservice.service.PassengerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,5 +23,13 @@ public class PassengerServiceImpl implements PassengerService {
         Passenger passenger = passengerMapper.toPassenger(request);
         passengerRepository.save(passenger);
         return passengerMapper.toPassengerResponse(passenger);
+    }
+
+    @Override
+    public List<PassengerResponse> getByAccountId(Long accountId) {
+        List<Passenger> passengers = passengerRepository.findAllByAccountIdAndIsDeleteFalse(accountId);
+        return passengers.stream()
+                .map(passengerMapper::toPassengerResponse)
+                .collect(Collectors.toList());
     }
 }

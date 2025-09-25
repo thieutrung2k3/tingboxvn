@@ -8,6 +8,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TripService {
-    List<TripResponse> search(Pageable pageable, LocalDateTime departureTime, List<String> originCodes,
+    List<TripResponse> search(Pageable pageable, LocalDateTime from, LocalDateTime to, List<String> originCodes,
             List<String> destinationCodes, Long providerId);
 }

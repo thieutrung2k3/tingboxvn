@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/booking")
+//@RequestMapping("/booking")
 public class BookingController {
 
     private final BookingService bookingService;
 
-    @PostMapping("/public")
+    @PostMapping("/public/create")
     public ApiResponse<BookingResponse> create(@RequestBody BookingRequest request) {
         return ApiResponse.data(bookingService.createBooking(request));
     }

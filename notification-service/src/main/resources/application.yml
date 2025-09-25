@@ -10,8 +10,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: tingboxvn.test@gmail.com
-    password: omxl oqpa coms ebbh
+    username: t.hieutrung2k3@gmail.com
+    password: vrss xahi jiuf wwhd
     properties:
       mail:
         smtp:

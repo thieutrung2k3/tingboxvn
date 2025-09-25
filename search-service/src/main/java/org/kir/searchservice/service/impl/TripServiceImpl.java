@@ -26,10 +26,15 @@ public class TripServiceImpl implements TripService {
     private final ProviderRepository providerRepository;
 
     @Override
-    public List<TripResponse> search(Pageable pageable, LocalDateTime departureTime, List<String> originCodes,
+    public List<TripResponse> search(Pageable pageable, LocalDateTime from, LocalDateTime to, List<String> originCodes,
             List<String> destinationCodes, Long providerId) {
-        Page<Trip> tripPage = tripRepository.searchWithPageable(departureTime, originCodes, destinationCodes,
-                providerId, pageable);
+        boolean applyOrigin = originCodes != null && !originCodes.isEmpty();
+        boolean applyDestination = destinationCodes != null && !destinationCodes.isEmpty();
+        if (originCodes == null) originCodes = java.util.Collections.emptyList();
+        if (destinationCodes == null) destinationCodes = java.util.Collections.emptyList();
+
+        Page<Trip> tripPage = tripRepository.searchWithPageable(from, to, applyOrigin, originCodes,
+                applyDestination, destinationCodes, pageable);
         List<Trip> trips = tripPage.getContent();
 
         // To response
