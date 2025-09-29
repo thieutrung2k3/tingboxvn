@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Seat Selection</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .seat-map {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+            max-width: 600px;
+        }
+        .seat {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .seat.available {
+            background-color: #e8f5e8;
+            border-color: #4caf50;
+        }
+        .seat.available:hover {
+            background-color: #c8e6c9;
+            transform: scale(1.05);
+        }
+        .seat.occupied {
+            background-color: #ffcdd2;
+            border-color: #f44336;
+            cursor: not-allowed;
+        }
+        .seat.reserved {
+            background-color: #fff3e0;
+            border-color: #ff9800;
+        }
+        .seat.locked {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+            animation: pulse 2s infinite;
+        }
+        .seat.locked-by-me {
+            background-color: #c8e6c9;
+            border-color: #4caf50;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .user-info {
+            margin: 10px 0;
+        }
+        .seat-info {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Real-time Seat Selection</h1>
+        
+        <div class="user-info">
+            <label>User ID: <input type="number" id="userId" value="1"></label>
+            <label>User Name: <input type="text" id="userName" value="User 1"></label>
+            <label>Trip ID: <input type="number" id="tripId" value="1"></label>
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+        </div>
+
+        <div id="status" class="status disconnected">Disconnected</div>
+
+        <div class="controls">
+            <h3>Controls</h3>
+            <button onclick="getSeatMap()">Load Seat Map</button>
+            <button onclick="getUserLocks()">My Locks</button>
+            <button onclick="cleanupLocks()">Cleanup Expired Locks</button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color available"></div>
+                <span>Available</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color occupied"></div>
+                <span>Occupied</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color reserved"></div>
+                <span>Reserved</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color locked"></div>
+                <span>Locked by Others</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color locked-by-me"></div>
+                <span>Locked by Me</span>
+            </div>
+        </div>
+
+        <div id="seatMap" class="seat-map"></div>
+        
+        <div id="seatInfo" class="seat-info" style="display: none;">
+            <h3>Seat Information</h3>
+            <div id="seatDetails"></div>
+        </div>
+
+        <div id="logs" style="margin-top: 20px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+            <h4>Activity Log</h4>
+            <div id="logContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let stompClient = null;
+        let connected = false;
+        let currentTripId = null;
+        let myLocks = new Set();
+
+        function connect() {
+            const userId = document.getElementById('userId').value;
+            const userName = document.getElementById('userName').value;
+            currentTripId = document.getElementById('tripId').value;
+            
+            if (!userId || !userName || !currentTripId) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
+                connected = true;
+                updateStatus('Connected', 'connected');
+                
+                // Subscribe to seat updates for this trip
+                stompClient.subscribe('/topic/seats/' + currentTripId, function (message) {
+                    const update = JSON.parse(message.body);
+                    handleSeatUpdate(update);
+                });
+                
+                // Subscribe to user-specific updates
+                stompClient.subscribe('/user/queue/seat-updates', function (message) {
+                    const update = JSON.parse(message.body);
+                    handleSeatUpdate(update);
+                });
+                
+                // Subscribe to errors
+                stompClient.subscribe('/user/queue/seat-errors', function (message) {
+                    const error = JSON.parse(message.body);
+                    log('Error: ' + error.message);
+                });
+                
+                // Load initial seat map
+                getSeatMap();
+                
+                // Start heartbeat
+                startHeartbeat();
+                
+            }, function (error) {
+                console.log('Connection error: ' + error);
+                connected = false;
+                updateStatus('Connection failed', 'disconnected');
+            });
+        }
+
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+            }
+            connected = false;
+            updateStatus('Disconnected', 'disconnected');
+        }
+
+        function startHeartbeat() {
+            setInterval(function() {
+                if (connected && currentTripId) {
+                    const userId = document.getElementById('userId').value;
+                    stompClient.send('/app/seat/heartbeat/' + currentTripId, {}, JSON.stringify({
+                        userId: parseInt(userId),
+                        sessionId: 'session_' + Date.now(),
+                        timestamp: Date.now()
+                    }));
+                }
+            }, 30000); // Send heartbeat every 30 seconds
+        }
+
+        function updateStatus(message, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + className;
+        }
+
+        function log(message) {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            logContent.innerHTML += '<div>[' + timestamp + '] ' + message + '</div>';
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        function getSeatMap() {
+            if (!currentTripId) return;
+            
+            fetch('/seat/public/map/' + currentTripId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderSeatMap(data.data);
+                        log('Seat map loaded');
+                    } else {
+                        log('Failed to load seat map: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    log('Error loading seat map: ' + error);
+                });
+        }
+
+        function renderSeatMap(seatMapData) {
+            const seatMapDiv = document.getElementById('seatMap');
+            seatMapDiv.innerHTML = '';
+            
+            // Group seats by class
+            Object.keys(seatMapData.seatsByClass).forEach(seatClass => {
+                const classDiv = document.createElement('div');
+                classDiv.style.gridColumn = '1 / -1';
+                classDiv.style.fontWeight = 'bold';
+                classDiv.style.marginTop = '20px';
+                classDiv.textContent = seatClass + ' Class';
+                seatMapDiv.appendChild(classDiv);
+                
+                seatMapData.seatsByClass[seatClass].forEach(seat => {
+                    const seatDiv = document.createElement('div');
+                    seatDiv.className = 'seat';
+                    seatDiv.textContent = seat.seatNumber;
+                    seatDiv.dataset.seatId = seat.id;
+                    seatDiv.dataset.seatNumber = seat.seatNumber;
+                    seatDiv.dataset.status = seat.status;
+                    
+                    updateSeatAppearance(seatDiv, seat);
+                    
+                    seatDiv.addEventListener('click', function() {
+                        handleSeatClick(seat);
+                    });
+                    
+                    seatDiv.addEventListener('mouseenter', function() {
+                        showSeatInfo(seat);
+                    });
+                    
+                    seatMapDiv.appendChild(seatDiv);
+                });
+            });
+        }
+
+        function updateSeatAppearance(seatDiv, seat) {
+            seatDiv.className = 'seat';
+            
+            if (myLocks.has(seat.seatNumber)) {
+                seatDiv.classList.add('locked-by-me');
+            } else if (seat.status === 'OCCUPIED') {
+                seatDiv.classList.add('occupied');
+            } else if (seat.status === 'RESERVED') {
+                seatDiv.classList.add('reserved');
+            } else if (seat.status === 'AVAILABLE') {
+                seatDiv.classList.add('available');
+            }
+        }
+
+        function handleSeatClick(seat) {
+            if (!connected) {
+                alert('Please connect first');
+                return;
+            }
+            
+            const userId = parseInt(document.getElementById('userId').value);
+            const userName = document.getElementById('userName').value;
+            
+            if (myLocks.has(seat.seatNumber)) {
+                // Release seat
+                stompClient.send('/app/seat/release/' + currentTripId, {}, JSON.stringify({
+                    seatNumber: seat.seatNumber,
+                    userId: userId,
+                    userName: userName
+                }));
+                log('Releasing seat ' + seat.seatNumber);
+            } else if (seat.status === 'AVAILABLE') {
+                // Select seat
+                stompClient.send('/app/seat/select/' + currentTripId, {}, JSON.stringify({
+                    seatNumber: seat.seatNumber,
+                    userId: userId,
+                    userName: userName
+                }));
+                log('Selecting seat ' + seat.seatNumber);
+            } else {
+                log('Cannot select seat ' + seat.seatNumber + ' - Status: ' + seat.status);
+            }
+        }
+
+        function handleSeatUpdate(update) {
+            log('Seat update: ' + update.action + ' - ' + update.seatNumber + ' by ' + (update.userName || 'Unknown'));
+            
+            const seatDiv = document.querySelector(`[data-seat-number="${update.seatNumber}"]`);
+            if (seatDiv) {
+                const userId = parseInt(document.getElementById('userId').value);
+                
+                if (update.action === 'LOCK' && update.userId === userId) {
+                    myLocks.add(update.seatNumber);
+                } else if (update.action === 'UNLOCK' && update.userId === userId) {
+                    myLocks.delete(update.seatNumber);
+                } else if (update.action === 'AUTO_UNLOCK') {
+                    myLocks.delete(update.seatNumber);
+                }
+                
+                // Update seat appearance
+                const seat = {
+                    id: update.seatId,
+                    seatNumber: update.seatNumber,
+                    status: update.status
+                };
+                updateSeatAppearance(seatDiv, seat);
+            }
+        }
+
+        function showSeatInfo(seat) {
+            const seatInfoDiv = document.getElementById('seatInfo');
+            const seatDetailsDiv = document.getElementById('seatDetails');
+            
+            seatDetailsDiv.innerHTML = `
+                <p><strong>Seat:</strong> ${seat.seatNumber}</p>
+                <p><strong>Class:</strong> ${seat.seatClass}</p>
+                <p><strong>Status:</strong> ${seat.status}</p>
+                <p><strong>Price:</strong> $${seat.totalPrice || 'N/A'}</p>
+                <p><strong>Window Seat:</strong> ${seat.isWindowSeat ? 'Yes' : 'No'}</p>
+                <p><strong>Aisle Seat:</strong> ${seat.isAisleSeat ? 'Yes' : 'No'}</p>
+            `;
+            
+            seatInfoDiv.style.display = 'block';
+        }
+
+        function getUserLocks() {
+            if (!currentTripId) return;
+            
+            const userId = document.getElementById('userId').value;
+            fetch('/seat/lock/user/' + currentTripId + '/' + userId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        log('My locks: ' + Object.keys(data.data).join(', '));
+                    } else {
+                        log('Failed to get user locks: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    log('Error getting user locks: ' + error);
+                });
+        }
+
+        function cleanupLocks() {
+            fetch('/seat/lock/cleanup', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        log('Cleanup completed');
+                    } else {
+                        log('Cleanup failed: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    log('Error during cleanup: ' + error);
+                });
+        }
+
+        // Initialize
+        log('Page loaded. Click Connect to start.');
+    </script>
+</body>
+</html>
