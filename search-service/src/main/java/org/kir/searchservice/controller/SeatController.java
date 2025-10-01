@@ -72,3 +72,6 @@ public class SeatController {
         return ApiResponse.data(seatService.reserveMultipleSeats(request));
     }
 }
+
+
+

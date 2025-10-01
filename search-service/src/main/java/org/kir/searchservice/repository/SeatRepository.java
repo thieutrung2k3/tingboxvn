@@ -30,3 +30,4 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Query("SELECT COUNT(s) FROM Seat s WHERE s.trip.id = :tripId AND s.isDelete = false AND s.seatClass = :seatClass AND s.status = 'AVAILABLE'")
     Long countAvailableSeatsByTripIdAndClass(@Param("tripId") Long tripId, @Param("seatClass") String seatClass);
 }
+

@@ -285,3 +285,4 @@ public class SeatWebSocketServiceImpl implements SeatWebSocketService {
         }
     }
 }
+

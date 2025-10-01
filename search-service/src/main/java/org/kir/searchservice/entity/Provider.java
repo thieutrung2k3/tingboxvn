@@ -2,6 +2,7 @@ package org.kir.searchservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.DynamicUpdate;
 import org.kir.searchservice.configuration.JpaJsonConverter;
 
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@DynamicUpdate
 @Table(name = "providers")
 public class Provider {
     @Id

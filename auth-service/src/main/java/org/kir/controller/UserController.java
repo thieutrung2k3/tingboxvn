@@ -43,8 +43,16 @@ public class UserController {
     @GetMapping("/admin/getUsersWithPaging")
     public ApiResponse<List<UserResponse>> getUsersWithPaging(Pageable pageable,
                                                               @RequestParam(value = "keyword", required = false) String keyword,
+                                                              @RequestParam(value = "status", required = false) Boolean status,
                                                               @RequestParam(value = "from", required = false) LocalDateTime from,
                                                               @RequestParam(value = "to", required = false) LocalDateTime to){
-        return ApiResponse.data(userService.getUsersWithPaging(pageable, keyword, from, to));
+        return ApiResponse.data(userService.getUsersWithPaging(pageable, keyword, status, from, to));
+    }
+
+    @PutMapping("/admin/updateUserStatus")
+    public ApiResponse<Void> updateUserStatus(@RequestParam(value = "userId") Long userId,
+                                              @RequestParam(value = "status") Boolean status){
+        userService.updateUserStatus(userId, status);
+        return ApiResponse.success(null);
     }
 }

@@ -12,7 +12,7 @@ import java.util.List;
 public interface UserService {
     UserResponse register(UserRegistrationRequest request);
 
-    void updatePassword(UpdatePasswordRequest request, String accountId);
+    void updatePassword(UpdatePasswordRequest request, Long userId);
 
     UserResponse validateUser(ValidateEmailRequest request);
 
@@ -20,5 +20,7 @@ public interface UserService {
 
     UserResponse getUserInfo();
 
-    List<UserResponse> getUsersWithPaging(Pageable pageable, String keyword, LocalDateTime from, LocalDateTime to);
+    List<UserResponse> getUsersWithPaging(Pageable pageable, String keyword, Boolean status, LocalDateTime from, LocalDateTime to);
+
+    void updateUserStatus(Long userId, Boolean status);
 }

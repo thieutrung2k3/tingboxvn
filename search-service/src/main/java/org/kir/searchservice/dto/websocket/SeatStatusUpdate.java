@@ -25,3 +25,6 @@ public class SeatStatusUpdate {
     private Long lockExpiryTime; // Unix timestamp when lock expires
     private String message; // Optional message for user
 }
+
+
+

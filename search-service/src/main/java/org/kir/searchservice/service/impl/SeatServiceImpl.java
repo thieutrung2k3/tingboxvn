@@ -78,7 +78,7 @@ public class SeatServiceImpl implements SeatService {
     }
 
     @Override
-    public List<SeatResponse> getAvailableSeatsByTripIdAndClass(Long tripId, String seatClass) {
+            public List<SeatResponse> getAvailableSeatsByTripIdAndClass(Long tripId, String seatClass) {
         List<Seat> seats = seatRepository.findAvailableSeatsByTripIdAndClass(tripId, seatClass);
         return seatMapper.toSeatResponseList(seats);
     }
@@ -170,3 +170,6 @@ public class SeatServiceImpl implements SeatService {
         return reservedSeats;
     }
 }
+
+
+

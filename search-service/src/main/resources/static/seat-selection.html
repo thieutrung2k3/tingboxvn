@@ -30,7 +30,7 @@
         .seat {
             width: 50px;
             height: 50px;
-            border: 2px solid #ddd;
+            border: 3px solid #bbb;
             border-radius: 4px;
             display: flex;
             align-items: center;
@@ -38,32 +38,41 @@
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s ease;
+            color: #111;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.05);
         }
         .seat.available {
-            background-color: #e8f5e8;
-            border-color: #4caf50;
+            background-color: #c8e6c9; /* light green */
+            border-color: #2e7d32;   /* dark green */
+            color: #1b5e20;
         }
         .seat.available:hover {
-            background-color: #c8e6c9;
+            background-color: #b2dfdb;
             transform: scale(1.05);
         }
         .seat.occupied {
-            background-color: #ffcdd2;
-            border-color: #f44336;
+            background-color: #e53935; /* strong red */
+            border-color: #b71c1c;
+            color: #ffffff;
+            box-shadow: 0 0 0 2px rgba(183,28,28,0.15) inset;
             cursor: not-allowed;
         }
         .seat.reserved {
-            background-color: #fff3e0;
-            border-color: #ff9800;
+            background-color: #fdd835; /* vivid yellow */
+            border-color: #f9a825;
+            color: #1a1a1a;
         }
         .seat.locked {
-            background-color: #e3f2fd;
-            border-color: #2196f3;
+            background-color: #64b5f6; /* bright blue */
+            border-color: #1565c0;
+            color: #0d47a1;
+            border-style: dashed;
             animation: pulse 2s infinite;
         }
         .seat.locked-by-me {
-            background-color: #c8e6c9;
-            border-color: #4caf50;
+            background-color: #26a69a; /* teal */
+            border-color: #00796b;
+            color: #ffffff;
             animation: pulse 2s infinite;
         }
         @keyframes pulse {
@@ -86,7 +95,14 @@
             width: 20px;
             height: 20px;
             border-radius: 3px;
+            border: 2px solid transparent;
         }
+        /* Legend swatches aligned with seat colors */
+        .legend-color.available { background-color: #c8e6c9; border-color: #2e7d32; }
+        .legend-color.occupied { background-color: #e53935; border-color: #b71c1c; }
+        .legend-color.reserved { background-color: #fdd835; border-color: #f9a825; }
+        .legend-color.locked { background-color: #64b5f6; border-color: #1565c0; border-style: dashed; }
+        .legend-color.locked-by-me { background-color: #26a69a; border-color: #00796b; }
         .controls {
             margin: 20px 0;
             padding: 15px;
@@ -125,6 +141,7 @@
             <label>User ID: <input type="number" id="userId" value="1"></label>
             <label>User Name: <input type="text" id="userName" value="User 1"></label>
             <label>Trip ID: <input type="number" id="tripId" value="1"></label>
+            <label>Token: <input type="text" id="authToken" placeholder="Bearer token"></label>
             <button onclick="connect()">Connect</button>
             <button onclick="disconnect()">Disconnect</button>
         </div>
@@ -179,6 +196,29 @@
         let connected = false;
         let currentTripId = null;
         let myLocks = new Set();
+        let othersLocks = new Set();
+        function getContextPath() {
+            const segments = location.pathname.split('/').filter(Boolean);
+            return segments.length > 0 ? '/' + segments[0] : '';
+        }
+        const CONTEXT_PATH = getContextPath();
+        const BASE_URL = `${location.protocol}//${location.hostname}:8888` + '/api/v1/search';
+        const SOCKET_URL = 'http://localhost:8003/search';
+        const WS_BASE = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:8003` + '/search';
+
+        function getAuthHeaders() {
+            const token = document.getElementById('authToken')?.value?.trim();
+            if (token) {
+                const value = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+                return { Authorization: value };
+            }
+            return {};
+        }
+
+        function apiFetch(url, options = {}) {
+            const headers = { ...(options.headers || {}), ...getAuthHeaders() };
+            return fetch(url, { ...options, headers });
+        }
 
         function connect() {
             const userId = document.getElementById('userId').value;
@@ -190,10 +230,10 @@
                 return;
             }
 
-            const socket = new SockJS('/ws');
+            const socket = new SockJS(SOCKET_URL + '/ws');
             stompClient = Stomp.over(socket);
             
-            stompClient.connect({}, function (frame) {
+            stompClient.connect(getAuthHeaders(), function (frame) {
                 console.log('Connected: ' + frame);
                 connected = true;
                 updateStatus('Connected', 'connected');
@@ -266,7 +306,7 @@
         function getSeatMap() {
             if (!currentTripId) return;
             
-            fetch('/seat/public/map/' + currentTripId)
+            apiFetch(BASE_URL + '/seat/public/map/' + currentTripId)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -322,6 +362,8 @@
             
             if (myLocks.has(seat.seatNumber)) {
                 seatDiv.classList.add('locked-by-me');
+            } else if (othersLocks.has(seat.seatNumber)) {
+                seatDiv.classList.add('locked');
             } else if (seat.status === 'OCCUPIED') {
                 seatDiv.classList.add('occupied');
             } else if (seat.status === 'RESERVED') {
@@ -368,12 +410,19 @@
             if (seatDiv) {
                 const userId = parseInt(document.getElementById('userId').value);
                 
-                if (update.action === 'LOCK' && update.userId === userId) {
-                    myLocks.add(update.seatNumber);
-                } else if (update.action === 'UNLOCK' && update.userId === userId) {
+                if (update.action === 'LOCK') {
+                    if (update.userId === userId) {
+                        myLocks.add(update.seatNumber);
+                    } else {
+                        othersLocks.add(update.seatNumber);
+                    }
+                } else if (update.action === 'UNLOCK' || update.action === 'AUTO_UNLOCK') {
                     myLocks.delete(update.seatNumber);
-                } else if (update.action === 'AUTO_UNLOCK') {
+                    othersLocks.delete(update.seatNumber);
+                } else if (update.action === 'RESERVE' || update.action === 'BOOK') {
+                    // Clear locks when state transitions to reserved/occupied
                     myLocks.delete(update.seatNumber);
+                    othersLocks.delete(update.seatNumber);
                 }
                 
                 // Update seat appearance
@@ -406,7 +455,7 @@
             if (!currentTripId) return;
             
             const userId = document.getElementById('userId').value;
-            fetch('/seat/lock/user/' + currentTripId + '/' + userId)
+            apiFetch(BASE_URL + '/seat/lock/user/' + currentTripId + '/' + userId)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -421,7 +470,7 @@
         }
 
         function cleanupLocks() {
-            fetch('/seat/lock/cleanup', { method: 'POST' })
+            apiFetch(BASE_URL + '/seat/lock/cleanup', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -440,3 +489,4 @@
     </script>
 </body>
 </html>
+

@@ -18,3 +18,4 @@ public class SeatSelectionRequest {
     private String passengerEmail;
     private String passengerPhone;
 }
+

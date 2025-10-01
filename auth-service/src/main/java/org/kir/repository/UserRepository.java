@@ -14,13 +14,14 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, String> {
+public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
 
     @Query("""
     SELECT new org.kir.dto.response.UserResponse(
+        u.id,
         u.email,
         u.firstName,
         u.lastName,
@@ -36,10 +37,13 @@ public interface UserRepository extends JpaRepository<User, String> {
            OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :keyword, '%')))
       AND u.createdAt >= COALESCE(:from, u.createdAt)
       AND u.createdAt <= COALESCE(:to, u.createdAt)
+      AND (:status IS NULL OR u.isActive = :status)
+      AND u.isDelete = false
     ORDER BY u.createdAt DESC
     """)
     Page<UserResponse> getUsersWithPaging(Pageable pageable,
                                           @Param("keyword") String keyword,
+                                          @Param("status") Boolean status,
                                           @Param("from") LocalDateTime from,
                                           @Param("to") LocalDateTime to);
 

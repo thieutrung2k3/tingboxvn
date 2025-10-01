@@ -1,6 +1,5 @@
 # @format
 
-# API Gateway application.yml
 server:
   port: 8888
 
@@ -17,6 +16,13 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
+        - id: search-service-ws
+          uri: lb:ws://search-service
+          predicates:
+            - Path=${app.api-prefix}/search/ws/**
+          filters:
+            # Strip the /api/v1/search prefix so backend sees /ws
+            - RewritePath=${app.api-prefix}/search/(?<segment>.*), /${segment}
         - id: auth-service
           uri: lb://auth-service
           predicates:
@@ -24,6 +30,7 @@ spring:
           filters:
             - RewritePath=${app.api-prefix}/(?<path>.*), /$\{path}
             - name: AuthenticationFilter
+
         - id: notification-service
           uri: lb://notification-service
           predicates:
@@ -31,6 +38,7 @@ spring:
           filters:
             - RewritePath=${app.api-prefix}/(?<path>.*), /$\{path}
             - name: AuthenticationFilter
+
         - id: passenger-service
           uri: lb://passenger-service
           predicates:
@@ -38,6 +46,7 @@ spring:
           filters:
             - RewritePath=${app.api-prefix}/(?<path>.*), /$\{path}
             - name: AuthenticationFilter
+
         - id: search-service
           uri: lb://search-service
           predicates:
@@ -45,7 +54,10 @@ spring:
           filters:
             - RewritePath=${app.api-prefix}/(?<path>.*), /$\{path}
             - name: AuthenticationFilter
+
       default-filters:
+        # QUAN TRỌNG: Giữ RETAIN_FIRST để loại bỏ duplicate headers
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Access-Control-Allow-Headers Access-Control-Allow-Methods Access-Control-Max-Age Access-Control-Expose-Headers Vary, RETAIN_FIRST
         - name: Retry
           args:
             retries: 3
@@ -55,6 +67,26 @@ spring:
             redis-rate-limiter.replenishRate: 10
             redis-rate-limiter.burstCapacity: 20
             redis-rate-limiter.requestedTokens: 1
+
+      # THÊM: Global CORS configuration cho WebSocket
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          "[/**]":
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:9000"
+              - "http://localhost:63342"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - HEAD
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
 
 eureka:
   client:

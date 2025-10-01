@@ -29,3 +29,6 @@ public interface SeatWebSocketService {
     
     boolean isSeatLockedByUser(Long tripId, String seatNumber, Long userId);
 }
+
+
+

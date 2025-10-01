@@ -22,3 +22,4 @@ public class SeatMapResponse {
     private Integer totalColumns;
     private List<String> columnLetters; // ["A", "B", "C", "D"]
 }
+

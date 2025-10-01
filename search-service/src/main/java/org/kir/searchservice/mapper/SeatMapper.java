@@ -30,3 +30,4 @@ public interface SeatMapper {
         return basePrice.add(modifierAmount);
     }
 }
+

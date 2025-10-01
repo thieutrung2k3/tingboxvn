@@ -22,3 +22,6 @@ public class SeatLockInfo {
     private Long lockDurationSeconds;
     private String lockId; // Unique identifier for this lock
 }
+
+
+

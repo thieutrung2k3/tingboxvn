@@ -149,8 +149,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updatePassword(UpdatePasswordRequest request, String accountId) {
-        User user = userRepository.findById(accountId)
+    public void updatePassword(UpdatePasswordRequest request, Long userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
@@ -210,8 +210,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserResponse> getUsersWithPaging(Pageable pageable, String keyword, LocalDateTime from, LocalDateTime to) {
-        Page<UserResponse> userResponses = userRepository.getUsersWithPaging(pageable, keyword, from, to);
+    public List<UserResponse> getUsersWithPaging(Pageable pageable, String keyword, Boolean status, LocalDateTime from, LocalDateTime to) {
+        if(keyword == null){
+            keyword = "";
+        }
+        Page<UserResponse> userResponses = userRepository.getUsersWithPaging(pageable, keyword, status, from, to);
         return userResponses.getContent();
+    }
+
+    @Override
+    public void updateUserStatus(Long userId, Boolean status) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        user.setIsActive(status);
+        userRepository.save(user);
     }
 }

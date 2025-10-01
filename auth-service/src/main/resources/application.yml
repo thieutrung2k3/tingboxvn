@@ -66,8 +66,8 @@ app:
 
 jwt:
   private-key: "eHr30nG1PQoaJ6JucIPuRKmxyyOcMPs3hHNDaiSrqXKZiC5HneVjmiMxw12EE8eH"
-  valid-duration: 3600
-  refresh-duration: 36000
+  valid-duration: 360000
+  refresh-duration: 360000
 
 springdoc:
   api-docs:

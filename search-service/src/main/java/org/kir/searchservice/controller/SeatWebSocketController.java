@@ -126,3 +126,6 @@ public class SeatWebSocketController {
         public void setTimestamp(Long timestamp) { this.timestamp = timestamp; }
     }
 }
+
+
+

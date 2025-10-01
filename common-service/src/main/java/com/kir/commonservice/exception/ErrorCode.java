@@ -42,6 +42,7 @@ public enum ErrorCode {
      * 3. Search
      */
     JSON_WRITE_ERROR(3001, "Xảy ra lỗi Json Write Error.", HttpStatus.BAD_REQUEST),
+    PROVIDER_NOT_FOUND(3002, "Không tìm thấy nhà cung cấp.", HttpStatus.NOT_FOUND),
 
     /**
      * 000. Common

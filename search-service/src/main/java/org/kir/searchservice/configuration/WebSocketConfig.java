@@ -14,7 +14,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // Enable a simple in-memory message broker for broadcasting messages
         config.enableSimpleBroker("/topic", "/queue");
-        
+
         // Set the application destination prefix for messages sent from client
         config.setApplicationDestinationPrefixes("/app");
     }
@@ -27,3 +27,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .withSockJS(); // Enable SockJS fallback options
     }
 }
+
+
+

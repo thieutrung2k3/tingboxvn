@@ -29,3 +29,4 @@ public class SeatResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
+
